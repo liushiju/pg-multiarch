@@ -1,0 +1,32 @@
+stages:
+  - build
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  PG_VERSION: "15.12"
+  PREFIX: "/data/postgresql/pgsql-15"
+
+build-postgresql:
+  stage: build
+  image: docker:27.0.3-cli
+  services:
+    - docker:27.0.3-dind
+  parallel:
+    matrix:
+      - BUILD_TARGET:
+          - ubuntu22
+          - ubuntu24
+          - el8
+          - el9
+  before_script:
+    - apk add --no-cache bash
+    - chmod +x scripts/build.sh scripts/package.sh
+  script:
+    - scripts/build.sh "$BUILD_TARGET"
+  artifacts:
+    name: "postgresql-${PG_VERSION}-${BUILD_TARGET}"
+    expire_in: 7 days
+    paths:
+      - dist/$BUILD_TARGET/*.tar.gz
+      - dist/$BUILD_TARGET/*.sha256

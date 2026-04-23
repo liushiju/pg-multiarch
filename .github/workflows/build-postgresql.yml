@@ -1,0 +1,60 @@
+name: build-postgresql
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - ubuntu22
+          - ubuntu24
+          - el8
+          - el9
+    env:
+      PG_VERSION: "15.12"
+      PREFIX: "/data/postgresql/pgsql-15"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build PostgreSQL
+        run: |
+          chmod +x scripts/build.sh scripts/package.sh
+          scripts/build.sh "${{ matrix.target }}"
+
+      - name: Upload archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgresql-${{ env.PG_VERSION }}-${{ matrix.target }}
+          path: |
+            dist/${{ matrix.target }}/*.tar.gz
+            dist/${{ matrix.target }}/*.sha256
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/**/*.tar.gz
+            release-assets/**/*.sha256
+          generate_release_notes: true
