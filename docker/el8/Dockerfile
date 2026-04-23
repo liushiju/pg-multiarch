@@ -1,7 +1,16 @@
 FROM rockylinux:8
 
-RUN dnf -y install dnf-plugins-core epel-release && \
-    dnf config-manager --set-enabled powertools && \
+RUN set -eux; \
+    dnf -y update; \
+    dnf -y install dnf-plugins-core; \
+    dnf clean all
+
+RUN set -eux; \
+    dnf config-manager --set-enabled powertools || \
+    dnf config-manager --set-enabled PowerTools || true; \
+    dnf repolist all
+
+RUN set -eux; \
     dnf -y install \
       bison \
       bzip2 \
@@ -22,15 +31,18 @@ RUN dnf -y install dnf-plugins-core epel-release && \
       make \
       openldap-devel \
       openssl-devel \
+      perl \
       perl-devel \
       perl-ExtUtils-Embed \
+      python3 \
       python3-devel \
       readline-devel \
+      tcl \
       tcl-devel \
       which \
       xz \
-      zlib-devel && \
-    dnf clean all
+      zlib-devel; \
+    dnf clean all; \
+    rm -rf /var/cache/dnf
 
 WORKDIR /workspace
-
