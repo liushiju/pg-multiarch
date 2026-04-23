@@ -15,7 +15,6 @@ RUN set -eux; \
       bison \
       bzip2 \
       ca-certificates \
-      curl \
       file \
       flex \
       gcc \
