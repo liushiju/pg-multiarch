@@ -5,6 +5,7 @@ This repository contains a Docker-based build matrix for PostgreSQL 15.12 across
 
 - `ubuntu22`
 - `ubuntu24`
+- `el7`
 - `el8`
 - `el9`
 
@@ -25,6 +26,11 @@ The default build configuration matches the feature set you shared:
 The build flow compiles the PostgreSQL core, enabled PL languages, and all source-tree
 `contrib` extensions that are available in the target platform's dependency set.
 
+`el7` is a legacy CentOS 7.9 target. It intentionally disables `--with-python` by
+default because CentOS 7.9 does not provide a reliable Python 3 development stack in
+the base repositories. `plperl`, `pltcl`, and source-tree `contrib` extensions are
+still built for `el7`.
+
 ## Layout
 
 - `docker/<target>/Dockerfile`: build image per target platform
@@ -39,6 +45,7 @@ The build flow compiles the PostgreSQL core, enabled PL languages, and all sourc
 chmod +x scripts/build.sh scripts/package.sh
 ./scripts/build.sh ubuntu22
 ./scripts/build.sh ubuntu24
+./scripts/build.sh el7
 ./scripts/build.sh el8
 ./scripts/build.sh el9
 ./scripts/build.sh all
@@ -46,8 +53,8 @@ chmod +x scripts/build.sh scripts/package.sh
 
 ## GitHub CI and Release
 
-- Push to `main`: GitHub Actions builds all four targets and uploads them as workflow artifacts
-- Push a tag like `v15.12.0`: GitHub Actions builds all four targets and publishes a GitHub Release
+- Push to `main`: GitHub Actions builds all matrix targets and uploads them as workflow artifacts
+- Push a tag like `v15.12.0`: GitHub Actions builds all matrix targets and publishes a GitHub Release
 - The Release page will contain every generated `.tar.gz` package and its `.sha256` checksum
 
 Example:

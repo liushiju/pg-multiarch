@@ -25,6 +25,17 @@ DEFAULT_CONFIGURE_FLAGS=(
   "--enable-nls"
 )
 
+EL7_CONFIGURE_FLAGS=(
+  "--prefix=${PREFIX}"
+  "--with-uuid=e2fs"
+  "--with-openssl"
+  "--with-libxml"
+  "--with-libxslt"
+  "--with-perl"
+  "--with-tcl"
+  "--enable-nls"
+)
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -35,6 +46,7 @@ Usage:
 Targets:
   ubuntu22
   ubuntu24
+  el7
   el8
   el9
 EOF
@@ -128,6 +140,10 @@ prepare_source_tarball() {
 
 configure_flags() {
   local flags=("${DEFAULT_CONFIGURE_FLAGS[@]}")
+  if [[ "${BUILD_TARGET:-}" == "el7" ]]; then
+    flags=("${EL7_CONFIGURE_FLAGS[@]}")
+  fi
+
   if [[ -n "$EXTRA_CONFIGURE_FLAGS" ]]; then
     # shellcheck disable=SC2206
     local extra=( $EXTRA_CONFIGURE_FLAGS )
@@ -201,12 +217,12 @@ main() {
   local mode=${1:-}
 
   case "$mode" in
-    ubuntu22|ubuntu24|el8|el9)
+    ubuntu22|ubuntu24|el7|el8|el9)
       build_image "$mode"
       run_container_build "$mode"
       ;;
     all)
-      for target in ubuntu22 ubuntu24 el8 el9; do
+      for target in ubuntu22 ubuntu24 el7 el8 el9; do
         build_image "$target"
         run_container_build "$target"
       done

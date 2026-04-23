@@ -17,6 +17,7 @@ jobs:
         target:
           - ubuntu22
           - ubuntu24
+          - el7
           - el8
           - el9
     env:

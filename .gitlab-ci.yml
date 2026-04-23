@@ -17,6 +17,7 @@ build-postgresql:
       - BUILD_TARGET:
           - ubuntu22
           - ubuntu24
+          - el7
           - el8
           - el9
   before_script:
