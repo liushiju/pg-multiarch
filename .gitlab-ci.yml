@@ -20,13 +20,16 @@ build-postgresql:
           - el7
           - el8
           - el9
+        ARCHIVE_ARCH:
+          - x86_64
+          - arm64
   before_script:
     - apk add --no-cache bash
     - chmod +x scripts/build.sh scripts/package.sh
   script:
-    - scripts/build.sh "$BUILD_TARGET"
+    - scripts/build.sh "$BUILD_TARGET" "$ARCHIVE_ARCH"
   artifacts:
-    name: "postgresql-${PG_VERSION}-${BUILD_TARGET}"
+    name: "postgresql-${PG_VERSION}-${BUILD_TARGET}-${ARCHIVE_ARCH}"
     expire_in: 7 days
     paths:
       - dist/$BUILD_TARGET/*.tar.gz

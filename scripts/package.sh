@@ -13,6 +13,11 @@ if [[ -z "$ARCHIVE_ARCH" ]]; then
   ARCHIVE_ARCH=$(uname -m)
 fi
 
+case "$ARCHIVE_ARCH" in
+  x86_64|amd64) ARCHIVE_ARCH=x86_64 ;;
+  arm64|aarch64) ARCHIVE_ARCH=arm64 ;;
+esac
+
 [[ -n "$BUILD_TARGET" ]] || {
   echo "BUILD_TARGET must be set" >&2
   exit 1

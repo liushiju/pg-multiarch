@@ -20,6 +20,14 @@ jobs:
           - el7
           - el8
           - el9
+        arch:
+          - x86_64
+          - arm64
+        include:
+          - arch: x86_64
+            platform: linux/amd64
+          - arch: arm64
+            platform: linux/arm64
     env:
       PG_VERSION: "15.12"
       PREFIX: "/data/postgresql/pgsql-15"
@@ -27,15 +35,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build PostgreSQL
+        env:
+          BUILD_PLATFORM: ${{ matrix.platform }}
+          ARCHIVE_ARCH: ${{ matrix.arch }}
         run: |
           chmod +x scripts/build.sh scripts/package.sh
-          scripts/build.sh "${{ matrix.target }}"
+          scripts/build.sh "${{ matrix.target }}" "${{ matrix.arch }}"
 
       - name: Upload archives
         uses: actions/upload-artifact@v4
         with:
-          name: postgresql-${{ env.PG_VERSION }}-${{ matrix.target }}
+          name: postgresql-${{ env.PG_VERSION }}-${{ matrix.target }}-${{ matrix.arch }}
           path: |
             dist/${{ matrix.target }}/*.tar.gz
             dist/${{ matrix.target }}/*.sha256

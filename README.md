@@ -9,6 +9,8 @@ This repository contains a Docker-based build matrix for PostgreSQL 15.12 across
 - `el8`
 - `el9`
 
+Each target can be built for `x86_64` and `arm64`.
+
 The default build configuration matches the feature set you shared:
 
 ```text
@@ -49,7 +51,14 @@ chmod +x scripts/build.sh scripts/package.sh
 ./scripts/build.sh el8
 ./scripts/build.sh el9
 ./scripts/build.sh all
+
+# Build a specific architecture
+./scripts/build.sh el9 x86_64
+./scripts/build.sh el9 arm64
 ```
+
+`all` builds every target for both `x86_64` and `arm64`. Local `arm64` builds require
+Docker support for `linux/arm64`, usually via Docker Desktop or QEMU/binfmt.
 
 ## GitHub CI and Release
 
@@ -73,6 +82,8 @@ git push origin v15.12.0
 - `SOURCE_TARBALL_URL`: override official PostgreSQL source URL
 - `SOURCE_TARBALL_PATH`: use an existing source tarball instead of downloading
 - `SKIP_PACKAGE=1`: build only, do not create tarball
+- `BUILD_PLATFORM`: Docker platform override, for example `linux/arm64`
+- `ARCHIVE_ARCH`: archive architecture label, for example `x86_64` or `arm64`
 
 ## Output
 

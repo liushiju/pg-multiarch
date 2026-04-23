@@ -12,6 +12,8 @@ SOURCE_TARBALL_PATH=${SOURCE_TARBALL_PATH:-}
 SKIP_PACKAGE=${SKIP_PACKAGE:-0}
 BUILD_TARGET=${BUILD_TARGET:-}
 EXTRA_CONFIGURE_FLAGS=${EXTRA_CONFIGURE_FLAGS:-}
+BUILD_PLATFORM=${BUILD_PLATFORM:-}
+ARCHIVE_ARCH=${ARCHIVE_ARCH:-}
 
 DEFAULT_CONFIGURE_FLAGS=(
   "--prefix=${PREFIX}"
@@ -39,7 +41,7 @@ EL7_CONFIGURE_FLAGS=(
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/build.sh <target>
+  scripts/build.sh <target> [x86_64|arm64]
   scripts/build.sh all
   scripts/build.sh --inside
 
@@ -50,6 +52,28 @@ Targets:
   el8
   el9
 EOF
+}
+
+platform_for_arch() {
+  case "$1" in
+    x86_64|amd64) echo "linux/amd64" ;;
+    arm64|aarch64) echo "linux/arm64" ;;
+    *)
+      echo "Unsupported architecture: $1" >&2
+      exit 1
+      ;;
+  esac
+}
+
+normalize_arch() {
+  case "$1" in
+    x86_64|amd64) echo "x86_64" ;;
+    arm64|aarch64) echo "arm64" ;;
+    *)
+      echo "Unsupported architecture: $1" >&2
+      exit 1
+      ;;
+  esac
 }
 
 require_cmd() {
@@ -87,8 +111,10 @@ join_by() {
 
 build_image() {
   local target=$1
+  local arch=$2
   local dockerfile="$REPO_ROOT/docker/${target}/Dockerfile"
-  local image_tag="${IMAGE_NAMESPACE}/postgresql-build:${target}"
+  local image_tag="${IMAGE_NAMESPACE}/postgresql-build:${target}-${arch}"
+  local platform=${BUILD_PLATFORM:-$(platform_for_arch "$arch")}
 
   [[ -f "$dockerfile" ]] || {
     echo "Missing Dockerfile for target: $target" >&2
@@ -96,17 +122,21 @@ build_image() {
   }
 
   require_cmd docker
-  docker build -f "$dockerfile" -t "$image_tag" "$REPO_ROOT"
+  docker build --platform "$platform" -f "$dockerfile" -t "$image_tag" "$REPO_ROOT"
 }
 
 run_container_build() {
   local target=$1
-  local image_tag="${IMAGE_NAMESPACE}/postgresql-build:${target}"
+  local arch=$2
+  local image_tag="${IMAGE_NAMESPACE}/postgresql-build:${target}-${arch}"
+  local platform=${BUILD_PLATFORM:-$(platform_for_arch "$arch")}
 
   require_cmd docker
 
-  docker run --rm \
+  docker run --rm --platform "$platform" \
     -e BUILD_TARGET="$target" \
+    -e BUILD_PLATFORM="$platform" \
+    -e ARCHIVE_ARCH="$arch" \
     -e PG_VERSION="$PG_VERSION" \
     -e PREFIX="$PREFIX" \
     -e SOURCE_TARBALL_URL="$SOURCE_TARBALL_URL" \
@@ -195,6 +225,8 @@ build_inside_container() {
 
   cat >"$out_root/BUILD-INFO.txt" <<EOF
 target=${BUILD_TARGET}
+arch=${ARCHIVE_ARCH:-$(uname -m)}
+platform=${BUILD_PLATFORM:-unknown}
 pg_version=${PG_VERSION}
 prefix=${PREFIX}
 configure_flags=$(join_by ' ' "${flags[@]}")
@@ -209,22 +241,33 @@ EOF
     BUILD_TARGET="$BUILD_TARGET" \
       PG_VERSION="$PG_VERSION" \
       PREFIX="$PREFIX" \
+      ARCHIVE_ARCH="${ARCHIVE_ARCH:-}" \
       "$workspace/scripts/package.sh"
   fi
 }
 
 main() {
   local mode=${1:-}
+  local arch=${2:-${ARCHIVE_ARCH:-}}
+  if [[ -z "$arch" ]]; then
+    case "${BUILD_PLATFORM:-}" in
+      linux/arm64) arch=arm64 ;;
+      *) arch=x86_64 ;;
+    esac
+  fi
+  arch=$(normalize_arch "$arch")
 
   case "$mode" in
     ubuntu22|ubuntu24|el7|el8|el9)
-      build_image "$mode"
-      run_container_build "$mode"
+      build_image "$mode" "$arch"
+      run_container_build "$mode" "$arch"
       ;;
     all)
       for target in ubuntu22 ubuntu24 el7 el8 el9; do
-        build_image "$target"
-        run_container_build "$target"
+        for arch in x86_64 arm64; do
+          build_image "$target" "$arch"
+          run_container_build "$target" "$arch"
+        done
       done
       ;;
     --inside)
