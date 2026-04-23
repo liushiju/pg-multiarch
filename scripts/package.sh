@@ -6,6 +6,7 @@ REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 
 BUILD_TARGET=${BUILD_TARGET:-}
 PG_VERSION=${PG_VERSION:-15.12}
+PREFIX=${PREFIX:-/data/postgresql/pgsql-15}
 ARCHIVE_ARCH=${ARCHIVE_ARCH:-}
 
 if [[ -z "$ARCHIVE_ARCH" ]]; then
@@ -21,16 +22,24 @@ STAGE_DIR="$REPO_ROOT/out/${BUILD_TARGET}/stage"
 DIST_DIR="$REPO_ROOT/dist/${BUILD_TARGET}"
 ARCHIVE_NAME="postgresql-${PG_VERSION}-${BUILD_TARGET}-${ARCHIVE_ARCH}.tar.gz"
 ARCHIVE_PATH="$DIST_DIR/$ARCHIVE_NAME"
+INSTALL_ROOT="$STAGE_DIR${PREFIX}"
+TOP_LEVEL_DIR=$(basename "$PREFIX")
+PACKAGE_PARENT=$(dirname "$INSTALL_ROOT")
 
 [[ -d "$STAGE_DIR" ]] || {
   echo "Stage directory does not exist: $STAGE_DIR" >&2
   exit 1
 }
 
+[[ -d "$INSTALL_ROOT" ]] || {
+  echo "Install root does not exist: $INSTALL_ROOT" >&2
+  exit 1
+}
+
 mkdir -p "$DIST_DIR"
 rm -f "$ARCHIVE_PATH" "$ARCHIVE_PATH.sha256"
 
-tar -C "$STAGE_DIR" -czf "$ARCHIVE_PATH" .
+tar -C "$PACKAGE_PARENT" -czf "$ARCHIVE_PATH" "$TOP_LEVEL_DIR"
 sha256sum "$ARCHIVE_PATH" >"$ARCHIVE_PATH.sha256"
 
 echo "Created:"

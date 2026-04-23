@@ -81,3 +81,6 @@ Each build writes:
 - staged install tree: `out/<target>/stage`
 - archive: `dist/<target>/postgresql-15.12-<target>-<arch>.tar.gz`
 - checksum: `dist/<target>/postgresql-15.12-<target>-<arch>.tar.gz.sha256`
+
+Archives extract to a single top-level `pgsql-15/` directory. The staged build still
+uses the configured prefix path internally during installation.
